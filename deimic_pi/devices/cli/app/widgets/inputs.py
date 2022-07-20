@@ -195,7 +195,7 @@ class TextInput(Widget):
             if self.title_style
             else self.title
         )
-        log(f"{self} - New display_title rendered: {self._display_content}")
+        log(f"{self} - New display_title rendered: {self._display_title}")
 
     def render_content(self):
         if self._focused or self.content:
