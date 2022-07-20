@@ -124,7 +124,7 @@ class TextInput(Widget):
         cursor_style: str = "underline",
         hint_style: str = "italic bright_black",
         line_length: int = 10,
-        lines: int = 1,
+        # lines: int = 1,
         trim_whitespaces: bool = True
     ):
         super().__init__(title)
@@ -132,7 +132,8 @@ class TextInput(Widget):
         self.hint = hint
 
         self.line_length = line_length
-        self.lines = lines
+        # self.lines = lines
+        self.lines = 1
 
         self.content = content
         self.cursor = cursor or 0
