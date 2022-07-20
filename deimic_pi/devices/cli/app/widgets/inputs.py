@@ -15,6 +15,8 @@ class TextInput(Widget):
 
     _display_content: RenderableType = Reactive("")
 
+    border_style: RenderableType = Reactive("")
+
     _focused: bool = False
 
     _title: str = ""
@@ -122,6 +124,7 @@ class TextInput(Widget):
         title_style: str = "bold",
         content_style: str = "",
         cursor_style: str = "underline",
+        border_style: str = "",
         hint_style: str = "italic bright_black",
         line_length: int = 10,
         # lines: int = 1,
@@ -145,6 +148,7 @@ class TextInput(Widget):
         self.hint_style = hint_style
         self.content_style = content_style
         self.cursor_style = cursor_style
+        self.border_style = border_style
 
         self.trim_whitespaces = trim_whitespaces
 
@@ -251,4 +255,5 @@ class TextInput(Widget):
             title_align=self.title_align,
             width=self.line_length+2,
             height=self.lines+2,
+            border_style=self.border_style
         )
