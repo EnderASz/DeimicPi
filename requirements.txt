@@ -1,0 +1,12 @@
+click
+pydantic
+pyzmq
+
+#CLI tools
+textual
+
+# LedDriver
+# adafruit-circuitpython-neopixel
+
+
+pyyaml
