@@ -19,18 +19,18 @@ class Bridge(Device):
     def __init__(self, settings: Settings):
         super().__init__(settings)
 
-        self.deimic_stream = self.ctx.socket(zmq.STREAM)
+        self.deimic_stream = self.create_socket(zmq.STREAM)
         self.deimic_stream.bind(f'tcp://*:{self.settings.deimic_port}')
 
-        self.inter_broadcaster = self.ctx.socket(zmq.PUB)
+        self.inter_broadcaster = self.create_socket(zmq.PUB)
         self.inter_broadcaster.bind(f'tcp://*:{self.settings.inter_broadcaster_port}')
 
-        self.inter_listener = self.ctx.socket(zmq.SUB)
+        self.inter_listener = self.create_socket(zmq.SUB)
         self.inter_listener.bind(f'tcp://*:{self.settings.inter_listener_port}')
         self.inter_listener.subscribe('')
 
-        self.extern_listener = self.ctx.socket(zmq.ROUTER)
+        self.extern_listener = self.create_socket(zmq.ROUTER)
         self.extern_listener.bind(f'tcp://*:{self.settings.extern_req_port}')
 
-        self.extern_broadcaster = self.ctx.socket(zmq.PUB)
+        self.extern_broadcaster = self.create_socket(zmq.PUB)
         self.extern_broadcaster.bind(f'tcp://*:{self.settings.extern_bcst_port}')

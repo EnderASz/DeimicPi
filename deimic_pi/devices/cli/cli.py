@@ -15,7 +15,7 @@ class CLITool(Device):
     ):
         super().__init__(settings)
 
-        self.monitor_socket = self.ctx.socket(zmq.SUB)
+        self.monitor_socket = self.create_socket(zmq.SUB)
         # TODO: Implement monitor filters
         self.monitor_socket.connect(
             self.settings.bridge_addr_form.format(
@@ -23,7 +23,7 @@ class CLITool(Device):
             )
         )
 
-        self.request_socket = self.ctx.socket(zmq.REQ)
+        self.request_socket = self.create_socket(zmq.REQ)
         self.request_socket.connect(
             self.settings.bridge_addr_form.format(
                 port=self.settings.extern_req_port
