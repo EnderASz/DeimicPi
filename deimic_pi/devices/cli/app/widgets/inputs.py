@@ -101,6 +101,14 @@ class TextInput(Widget):
         )
         log(f"{self} - Hint changed to: {value}")
 
+    @property
+    def value(self) -> str:
+        """
+        Returns value contained in text input content.
+        """
+        if self.trim_whitespaces:
+            return self.content.strip()
+        return self.content
 
     def __init__(
         self,
@@ -117,6 +125,7 @@ class TextInput(Widget):
         hint_style: str = "italic bright_black",
         line_length: int = 10,
         lines: int = 1,
+        trim_whitespaces: bool = True
     ):
         super().__init__(title)
         self.title = title if title is not None else ""
@@ -135,6 +144,8 @@ class TextInput(Widget):
         self.hint_style = hint_style
         self.content_style = content_style
         self.cursor_style = cursor_style
+
+        self.trim_whitespaces = trim_whitespaces
 
         self.render_title()
         self.render_content()
