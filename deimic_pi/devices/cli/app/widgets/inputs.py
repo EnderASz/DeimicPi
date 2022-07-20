@@ -23,7 +23,8 @@ class TextInput(Widget):
     def title(self):
         return self._title
 
-    def _set_title(self, value: str):
+    @title.setter
+    def title(self, value: str):
         self._title = (
             str(value)
             if value is not None
@@ -31,32 +32,20 @@ class TextInput(Widget):
         )
         log(f"{self} - Title changed to: {value}")
 
-    @title.setter
-    def title(self, value: str):
-        self._set_title(value)
-        self.render_title()
-
     _content: str = ""
 
     @property
     def content(self) -> str:
         return self._content
 
-    def _set_content(self, value: str | None):
-        """
-        Use only to avoid rendering `display_content`.
-        """
+    @content.setter
+    def content(self, value: str | None):
         self._content = (
             str(value)
             if value is not None
             else ""
         )
         log(f"{self} - Content changed to: {value}")
-
-    @content.setter
-    def content(self, value: str | None):
-        self._set_content(value)
-        self.render_content()
 
     # Cursor position is at `cursor` character in `content`
     _cursor: int = 0
@@ -65,10 +54,8 @@ class TextInput(Widget):
     def cursor(self) -> int:
         return self._cursor
 
-    def _set_cursor(self, value: int):
-        """
-        Use only to avoid rendering `display_content`.
-        """
+    @cursor.setter
+    def cursor(self, value: int):
         value = int(value)
         if value < 0:
             raise ValueError("Cursor position cannot be negative value.")
@@ -76,11 +63,6 @@ class TextInput(Widget):
             raise ValueError("Cursor position cannot exceed the text length.")
         self._cursor = value
         log(f"{self} - Cursor moved to: {value}")
-
-    @cursor.setter
-    def cursor(self, value: int):
-        self._set_cursor(value)
-        self.render_content()
 
     @property
     def before_cursor(self) -> str:
@@ -110,7 +92,8 @@ class TextInput(Widget):
     def hint(self) -> str:
         return self._hint
 
-    def _set_hint(self, value: str):
+    @hint.setter
+    def hint(self, value: str):
         self._hint = (
             str(value)
             if value is not None
@@ -118,11 +101,6 @@ class TextInput(Widget):
         )
         log(f"{self} - Hint changed to: {value}")
 
-    @hint.setter
-    def hint(self, value: str | None):
-        self._set_hint(value)
-        if not self._focused:
-            self.render_content()
 
     def __init__(
         self,
@@ -141,14 +119,14 @@ class TextInput(Widget):
         lines: int = 1,
     ):
         super().__init__(title)
-        self._set_title(title)
-        self._set_hint(hint)
+        self.title = title if title is not None else ""
+        self.hint = hint
 
         self.line_length = line_length
         self.lines = lines
 
-        self._set_content(content)
-        self._set_cursor(cursor or 0)
+        self.content = content
+        self.cursor = cursor or 0
 
         self.title_align = title_align
         self.content_align = content_align
@@ -174,12 +152,12 @@ class TextInput(Widget):
                         self.content = self.before_cursor+self.after_cursor
                 case "left":
                     try:
-                        self.cursor -= 1
+                        self.move_cursor(-1)
                     except ValueError:
                         pass
                 case "right":
                     try:
-                        self.cursor += 1
+                        self.move_cursor(1)
                     except ValueError:
                         pass
 
@@ -194,17 +172,21 @@ class TextInput(Widget):
         self.render_content()
 
     def write(self, value):
-        self._set_content(
+        self.content = (
             self.before_cursor + value + self.from_cursor
             if self.content is not None
             else value
         )
-        self._set_cursor(self.cursor + 1)
+        self.cursor += 1
         self.render_content()
 
     def backspace(self):
-        self._set_content(self.before_cursor[:-1]+self.from_cursor)
-        self._set_cursor(self.cursor - 1)
+        self.content = self.before_cursor[:-1] + self.from_cursor
+        self.cursor -= 1
+        self.render_content()
+
+    def move_cursor(self, move):
+        self.cursor += move
         self.render_content()
 
     def render_title(self):
