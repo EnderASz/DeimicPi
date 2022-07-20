@@ -4,6 +4,9 @@ from rich.panel import Panel
 from textual import events, log
 from textual.reactive import Reactive
 from textual.widget import Widget
+from textual import widgets as base
+
+from deimic_pi.types import Port
 
 
 class TextInput(Widget):
@@ -252,3 +255,19 @@ class TextInput(Widget):
             height=self.lines+2,
             border_style=self.border_style
         )
+
+
+class PortInput(TextInput):
+    @property
+    def value(self) -> Port:
+        return Port(super().value)
+
+
+class Submitted(base.ButtonPressed):
+    pass
+
+
+class SubmitButton(base.Button):
+    async def on_click(self, event: events.Click) -> None:
+        event.prevent_default().stop()
+        await self.emit(Submitted(self))
