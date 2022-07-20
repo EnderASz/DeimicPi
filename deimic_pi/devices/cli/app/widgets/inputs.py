@@ -1,10 +1,6 @@
-import typing as t
-
 from rich import align
 from rich.console import RenderableType
 from rich.panel import Panel
-from rich.segment import Segment
-from rich.text import Text
 from textual import events, log
 from textual.reactive import Reactive
 from textual.widget import Widget
@@ -184,8 +180,6 @@ class TextInput(Widget):
 
     def on_blur(self, event: events.Blur):
         self._focused = False
-        if self.content == "":
-            self._set_content(None)
         self.render_content()
 
     def write(self, value):
