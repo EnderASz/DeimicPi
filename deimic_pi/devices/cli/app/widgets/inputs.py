@@ -114,8 +114,9 @@ class TextInput(Widget):
 
     def __init__(
         self,
-        title: str = None,
+        name: str,
         *,
+        title: str = None,
         content: str = "",
         cursor: int = 0,
         hint: str = "",
@@ -130,8 +131,8 @@ class TextInput(Widget):
         # lines: int = 1,
         trim_whitespaces: bool = True
     ):
-        super().__init__(title)
-        self.title = title if title is not None else ""
+        super().__init__(name)
+        self.title = title if title is not None else name
         self.hint = hint
 
         self.line_length = line_length
