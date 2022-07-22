@@ -1,1 +1,1 @@
-from .connection import ConnectionEstablishView
+from .connection import ConnectionEstablishView, AppConnected
