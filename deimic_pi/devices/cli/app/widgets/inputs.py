@@ -165,7 +165,7 @@ class TextInput(Widget):
                         self.backspace()
                 case "delete":
                     if self.cursor < len(self.content):
-                        self.content = self.before_cursor+self.after_cursor
+                        self.delete()
                 case "left":
                     try:
                         self.move_cursor(-1)
@@ -197,6 +197,10 @@ class TextInput(Widget):
     def backspace(self):
         self.content = self.before_cursor[:-1] + self.from_cursor
         self.cursor -= 1
+        self.render_content()
+
+    def delete(self):
+        self.content = self.before_cursor + self.after_cursor
         self.render_content()
 
     def move_cursor(self, move):
