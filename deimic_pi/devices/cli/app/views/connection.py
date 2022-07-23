@@ -40,7 +40,12 @@ class ConnectionEstablishView(GridView):
                 f"Warning: {message} sent from {message.sender} instead of"
                 f" {Submittable} instance"
             )
-        if message.submition_name == "submit_connect":
+        if message.sender in [
+            self.address_input,
+            self.monitor_port_input,
+            self.request_port_input,
+            self.submit_input
+        ]:
             valid = True
 
             address = self.address_input.value
@@ -109,10 +114,7 @@ class ConnectionEstablishView(GridView):
             title_style="bold",
             line_length=30
         )
-        self.submit_input = SubmitButton(
-            label="connect",
-            name="submit_connect"
-        )
+        self.submit_input = SubmitButton("connect")
         self.grid.set_align(column="center", row="center")
         self.grid.set_gap(column=0, row=1)
         self.grid.add_column("form", size=30)

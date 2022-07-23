@@ -2,7 +2,6 @@ from rich import align
 from rich.console import RenderableType
 from rich.panel import Panel
 from textual import events, log
-from textual._types import MessageTarget
 from textual.message import Message
 from textual.message_pump import MessagePump
 from textual.reactive import Reactive
@@ -13,14 +12,12 @@ from deimic_pi.types import Port
 
 
 class Submitted(Message):
-    def __init__(self, sender: MessageTarget, submition_name: str):
-        super().__init__(sender)
-        self.submition_name = submition_name
+    pass
 
 
 class Submittable(MessagePump):
-    async def submit(self, submition_name: str):
-        await self.emit(Submitted(self, submition_name))
+    async def submit(self):
+        await self.emit(Submitted(self))
 
 
 class TextInput(Widget, Submittable):
@@ -191,7 +188,7 @@ class TextInput(Widget, Submittable):
                     except ValueError:
                         pass
                 case "enter":
-                    await self.submit("submit_connect")
+                    await self.submit()
 
     def on_focus(self, event: events.Focus):
         self._focused = True
@@ -284,6 +281,10 @@ class PortInput(TextInput):
 
 
 class SubmitButton(base.Button, Submittable):
+    async def on_key(self, event: events.Key):
+        if event.key == "enter":
+            await self.submit()
+
     async def on_click(self, event: events.Click) -> None:
         event.prevent_default().stop()
-        await self.submit(submit_connect)
+        await self.submit()
