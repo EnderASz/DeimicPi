@@ -1,1 +1,1 @@
-from .inputs import TextInput, PortInput, SubmitButton, Submitted
+from .inputs import TextInput, PortInput, SubmitButton, Submitted, Submittable

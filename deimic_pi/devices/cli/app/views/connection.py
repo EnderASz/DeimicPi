@@ -8,7 +8,8 @@ from deimic_pi.devices.cli.app.widgets import (
     TextInput,
     PortInput,
     SubmitButton,
-    Submitted
+    Submitted,
+    Submittable
 )
 from deimic_pi.devices.cli.settings import Settings
 
@@ -34,12 +35,12 @@ class ConnectionEstablishView(GridView):
     submit_input: SubmitButton
 
     async def handle_submitted(self, message: Submitted):
-        if not isinstance(message.sender, SubmitButton):
+        if not isinstance(message.sender, Submittable):
             log(
                 f"Warning: {message} sent from {message.sender} instead of"
-                f" {SubmitButton} instance"
+                f" {Submittable} instance"
             )
-        if message.sender.name == "submit_connect":
+        if message.submition_name == "submit_connect":
             valid = True
 
             address = self.address_input.value
