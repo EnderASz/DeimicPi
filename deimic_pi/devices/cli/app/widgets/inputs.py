@@ -137,7 +137,7 @@ class TextInput(Widget, Submittable):
         cursor_style: str = "underline",
         border_style: str = "",
         hint_style: str = "italic bright_black",
-        line_length: int = 10,
+        line_length: int | None = None,
         # lines: int = 1,
         trim_whitespaces: bool = True
     ):
@@ -223,7 +223,7 @@ class TextInput(Widget, Submittable):
     def render_title(self):
         self._display_title = (
             f"[{self.title_style}]{self.title}[/{self.title_style}]"
-            if self.title_style
+            if self.title_style and self.title
             else self.title
         )
         log(f"{self} - New display_title rendered: {self._display_title}")
@@ -268,7 +268,11 @@ class TextInput(Widget, Submittable):
             ),
             title=self._display_title,
             title_align=self.title_align,
-            width=self.line_length+2,
+            width=(
+                (self.line_length+2)
+                if self.line_length is not None
+                else None
+            ),
             height=self.lines+2,
             border_style=self.border_style
         )
