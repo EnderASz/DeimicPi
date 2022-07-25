@@ -216,6 +216,11 @@ class TextInput(Widget, Submittable):
         self.content = self.before_cursor + self.after_cursor
         self.render_content()
 
+    def clear(self):
+        self.content = ""
+        self.cursor = 0
+        self.render_content()
+
     def move_cursor(self, move):
         self.cursor += move
         self.render_content()
