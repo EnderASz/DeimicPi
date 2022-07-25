@@ -96,7 +96,7 @@ class ConnectionEstablishView(GridView):
             hint="localhost",
             title_align="left",
             title_style="bold",
-            line_length=30
+            max_width=28
         )
         self.monitor_port_input = PortInput(
             "Monitor port",
@@ -104,7 +104,7 @@ class ConnectionEstablishView(GridView):
             hint="5555",
             title_align="left",
             title_style="bold",
-            line_length=30
+            max_width=28
         )
         self.request_port_input = PortInput(
             "Requests port",
@@ -112,7 +112,7 @@ class ConnectionEstablishView(GridView):
             hint="5555",
             title_align="left",
             title_style="bold",
-            line_length=30
+            max_width=28
         )
         self.submit_input = SubmitButton("connect")
         self.grid.set_align(column="center", row="center")

@@ -21,15 +21,17 @@ class Submittable(MessagePump):
 
 
 class TextInput(Widget, Submittable):
-    _display_title: RenderableType = Reactive("")
+    _display_title: RenderableType = ""
 
-    _display_content: RenderableType = Reactive("")
+    _display_content: RenderableType = ""
 
     border_style: RenderableType = Reactive("")
 
-    _focused: bool = False
+    _focused: bool = Reactive(False)
 
-    _title: str = ""
+    _content_boundaries: tuple[int, int] = Reactive((0, 0))
+
+    _title: str = Reactive("")
 
     @property
     def title(self):
@@ -44,7 +46,7 @@ class TextInput(Widget, Submittable):
         )
         log(f"{self} - Title changed to: {value}")
 
-    _content: str = ""
+    _content: str = Reactive("")
 
     @property
     def content(self) -> str:
@@ -59,8 +61,14 @@ class TextInput(Widget, Submittable):
         )
         log(f"{self} - Content changed to: {value}")
 
+        if self._content_boundaries[0] > 0:
+            if len(self.content) < self._content_boundaries[1]:
+                self._move_boundaries(-1)
+                return
+        log(f"{self} - Content boundaries changed to: {self._content_boundaries}")
+
     # Cursor position is at `cursor` character in `content`
-    _cursor: int = 0
+    _cursor: int = Reactive(0)
 
     @property
     def cursor(self) -> int:
@@ -76,9 +84,20 @@ class TextInput(Widget, Submittable):
         self._cursor = value
         log(f"{self} - Cursor moved to: {value}")
 
+        if self._content_boundaries[0] > self.cursor:
+            self._move_boundaries(self.cursor - self._content_boundaries[0])
+        elif self._content_boundaries[1] < self.cursor:
+            self._move_boundaries(self.cursor - self._content_boundaries[1])
+        elif self._content_boundaries[1] == self.cursor:
+            self._move_boundaries(1)
+
     @property
     def before_cursor(self) -> str:
         return self.content[:self.cursor]
+
+    @property
+    def before_cursor_in_boundaries(self) -> str:
+        return self.content[self._content_boundaries[0]:self.cursor]
 
     @property
     def to_cursor(self) -> str:
@@ -98,7 +117,11 @@ class TextInput(Widget, Submittable):
     def after_cursor(self) -> str:
         return self.content[self.cursor+1:]
 
-    _hint: str = ""
+    @property
+    def after_cursor_in_boundaries(self) -> str:
+        return self.content[self.cursor+1:self._content_boundaries[1]]
+
+    _hint: str = Reactive("")
 
     @property
     def hint(self) -> str:
@@ -126,7 +149,7 @@ class TextInput(Widget, Submittable):
         self,
         name: str,
         *,
-        title: str = None,
+        title: str | None = None,
         content: str = "",
         cursor: int = 0,
         hint: str = "",
@@ -137,7 +160,7 @@ class TextInput(Widget, Submittable):
         cursor_style: str = "underline",
         border_style: str = "",
         hint_style: str = "italic bright_black",
-        line_length: int | None = None,
+        max_width: int | None = None,
         # lines: int = 1,
         trim_whitespaces: bool = True
     ):
@@ -145,7 +168,7 @@ class TextInput(Widget, Submittable):
         self.title = title if title is not None else name
         self.hint = hint
 
-        self.line_length = line_length
+        self.max_width = max_width
         # self.lines = lines
         self.lines = 1
 
@@ -163,8 +186,8 @@ class TextInput(Widget, Submittable):
 
         self.trim_whitespaces = trim_whitespaces
 
-        self.render_title()
-        self.render_content()
+    def on_show(self, event: events.Show):
+        self._content_boundaries = (0, self.size.width-4)
 
     async def on_key(self, event: events.Key):
         if len(event.key) == 1 and 32 <= ord(event.key) <= 126:
@@ -192,11 +215,9 @@ class TextInput(Widget, Submittable):
 
     def on_focus(self, event: events.Focus):
         self._focused = True
-        self.render_content()
 
     def on_blur(self, event: events.Blur):
         self._focused = False
-        self.render_content()
 
     def write(self, value):
         self.content = (
@@ -204,26 +225,28 @@ class TextInput(Widget, Submittable):
             if self.content is not None
             else value
         )
-        self.cursor += 1
-        self.render_content()
+        self.move_cursor(1)
 
     def backspace(self):
         self.content = self.before_cursor[:-1] + self.from_cursor
-        self.cursor -= 1
-        self.render_content()
+        self.move_cursor(-1)
 
     def delete(self):
         self.content = self.before_cursor + self.after_cursor
-        self.render_content()
 
     def clear(self):
         self.content = ""
         self.cursor = 0
-        self.render_content()
 
-    def move_cursor(self, move):
+    def move_cursor(self, move: int):
         self.cursor += move
-        self.render_content()
+
+    def _move_boundaries(self, move: int):
+        self._content_boundaries = (
+            self._content_boundaries[0] + move,
+            self._content_boundaries[1] + move
+        )
+        log(f"{self} - Content boundaries moved to: {self._content_boundaries}")
 
     def render_title(self):
         self._display_title = (
@@ -243,9 +266,9 @@ class TextInput(Widget, Submittable):
                     f"[/{self.cursor_style}]",
                 ]
             content = [
-                self.before_cursor,
+                self.before_cursor_in_boundaries,
                 *content,
-                self.after_cursor
+                self.after_cursor_in_boundaries
             ]
             if self.content_style:
                 content = [
@@ -266,6 +289,9 @@ class TextInput(Widget, Submittable):
         log(f"{self} - New display_content rendered: {self._display_content}")
 
     def render(self) -> RenderableType:
+        self.render_title()
+        self.render_content()
+
         return Panel(
             align.Align(
                 self._display_content,
@@ -273,11 +299,7 @@ class TextInput(Widget, Submittable):
             ),
             title=self._display_title,
             title_align=self.title_align,
-            width=(
-                (self.line_length+2)
-                if self.line_length is not None
-                else None
-            ),
+            width=self.max_width,
             height=self.lines+2,
             border_style=self.border_style
         )
