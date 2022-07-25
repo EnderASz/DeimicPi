@@ -4,7 +4,7 @@ from textual.widgets import Placeholder
 from deimic_pi.devices.cli import CLITool
 from deimic_pi.devices.cli.app.views import (
     ConnectionEstablishView,
-    AppConnected
+    AppConnected, BridgeConsoleView
 )
 
 
@@ -16,7 +16,7 @@ class CLIApp(App):
         self.view.layout.docks.clear()
         self.view.widgets.clear()
 
-        await self.view.dock(Placeholder(name=str(self.cli_device)))
+        await self.view.dock(BridgeConsoleView(self.cli_device))
 
     async def on_mount(self):
         await self.view.dock(ConnectionEstablishView())
