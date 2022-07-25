@@ -7,11 +7,23 @@ from deimic_pi.devices.cli.app.widgets import TextInput, ClockHeader
 
 
 class BridgeConsoleView(GridView):
+    command_line_input: TextInput
+
     def __init__(self, device: CLITool):
         super().__init__()
         self.device = device
 
+    def handle_submitted(self, message: Submitted):
+        if message.sender is self.command_line_input:
+            # self.device.request_socket.send_string(self.command_line_input.content)
+            self.command_line_input.clear()
+
     async def on_mount(self, event: events.Mount):
+        self.command_line_input = TextInput(
+            name='command_line',
+            title="",
+            hint="Enter command for bridge here..."
+        )
         self.grid.add_column('left', fraction=1, max_size=35)
         self.grid.add_column('right', fraction=3)
         self.grid.add_row('header', size=3)
@@ -27,10 +39,6 @@ class BridgeConsoleView(GridView):
         self.grid.add_widget(Placeholder(name='commands'), area='commands_area')
         self.grid.add_widget(Placeholder(name='monitor'), area='monitor_area')
         self.grid.add_widget(
-            TextInput(
-                name='command_line',
-                title="",
-                hint="Enter command for bridge here..."
-            ),
+            self.command_line_input,
             area='command_line_area'
         )
