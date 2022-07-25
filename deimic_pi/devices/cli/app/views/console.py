@@ -3,7 +3,7 @@ from textual.views import GridView
 from textual.widgets import Placeholder
 
 from deimic_pi.devices.cli import CLITool
-from deimic_pi.devices.cli.app.widgets import TextInput
+from deimic_pi.devices.cli.app.widgets import TextInput, ClockHeader
 
 
 class BridgeConsoleView(GridView):
@@ -14,13 +14,16 @@ class BridgeConsoleView(GridView):
     async def on_mount(self, event: events.Mount):
         self.grid.add_column('left', fraction=1, max_size=35)
         self.grid.add_column('right', fraction=3)
+        self.grid.add_row('header', size=3)
         self.grid.add_row('top')
         self.grid.add_row('bottom', size=3)
         self.grid.add_areas(
+            header='left-start | right-end, header',
             commands_area='left, top-start | bottom-end',
             monitor_area='right, top',
             command_line_area='right, bottom'
         )
+        self.grid.add_widget(ClockHeader(subtitle="Console"), area='header')
         self.grid.add_widget(Placeholder(name='commands'), area='commands_area')
         self.grid.add_widget(Placeholder(name='monitor'), area='monitor_area')
         self.grid.add_widget(

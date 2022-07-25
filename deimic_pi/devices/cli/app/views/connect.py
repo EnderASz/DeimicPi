@@ -9,7 +9,8 @@ from deimic_pi.devices.cli.app.widgets import (
     PortInput,
     SubmitButton,
     Submitted,
-    Submittable
+    Submittable,
+    Header
 )
 from deimic_pi.devices.cli.settings import Settings
 
@@ -117,10 +118,19 @@ class ConnectionEstablishView(GridView):
         self.submit_input = SubmitButton("connect")
         self.grid.set_align(column="center", row="center")
         self.grid.set_gap(column=0, row=1)
-        self.grid.add_column("form", size=30)
+        self.grid.add_column("left", size=10)
+        self.grid.add_column("middle", size=28)
+        self.grid.add_column("right", size=10)
+        self.grid.add_row("header", size=3)
         self.grid.add_row("data", repeat=3, size=3)
         self.grid.add_row("submit", size=3)
-        self.grid.add_widget(self.address_input)
-        self.grid.add_widget(self.monitor_port_input)
-        self.grid.add_widget(self.request_port_input)
-        self.grid.add_widget(self.submit_input)
+        self.grid.add_areas(
+            header_area='left-start | right-end, header',
+            **{f'data{i}_area': f'middle, data{i}' for i in range(1, 4)},
+            submit_area='left-start | right-end, submit'
+        )
+        self.grid.add_widget(Header(subtitle="Connect"), area='header_area')
+        self.grid.add_widget(self.address_input, area='data1_area')
+        self.grid.add_widget(self.monitor_port_input, area='data2_area')
+        self.grid.add_widget(self.request_port_input, area='data3_area')
+        self.grid.add_widget(self.submit_input, area='submit_area')
