@@ -2,7 +2,7 @@ import abc
 import enum
 import typing as t
 
-import zmq
+import zmq.asyncio as zmq_asyncio
 
 from deimic_pi.messages import Poller
 from deimic_pi.settings import Settings
@@ -87,12 +87,12 @@ class Device(abc.ABC):
     def __init__(self, settings: _T_Settings):
         self.settings = settings
 
-        self.ctx = zmq.Context()
+        self.ctx = zmq_asyncio.Context()
 
-    def execute(self):
+    async def execute(self):
         poller = self.POLLER_CLS(device=self)
         while True:
-            poller.handle()
+            await poller.handle()
 
 
 class DeimicCompatibleDevice(Device):
