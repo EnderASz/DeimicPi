@@ -24,7 +24,7 @@ class MessagePartType(str, enum.Enum):
 
 PayloadPart = bytes | list | str | int | float | dict
 Payload = list[PayloadPart]
-Handling = t.AsyncGenerator[PayloadPart, MessagePartType, None]
+Handling = t.AsyncGenerator[PayloadPart, MessagePartType]
 
 
 async def send_parts(
@@ -95,13 +95,7 @@ class MessageHandler(abc.ABC):
         ...
 
 
-async def _handle_multipart(
-    socket: zmq_asyncio.Socket,
-) -> t.AsyncGenerator[
-    bytes | list | str | int | float | dict,
-    MessagePartType,
-    None
-]:
+async def _handle_multipart(socket: zmq_asyncio.Socket) -> Handling:
     part_type = yield
     while True:
         match part_type or MessagePartType.RAW:
