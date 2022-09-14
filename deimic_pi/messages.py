@@ -2,7 +2,8 @@ import abc
 import enum
 import typing as t
 
-import zmq.asyncio
+import zmq
+import zmq.asyncio as zmq_asyncio
 
 if t.TYPE_CHECKING:
     from deimic_pi.devices import Device
@@ -23,12 +24,12 @@ class MessagePartType(str, enum.Enum):
 
 PayloadPart = bytes | list | str | int | float | dict
 Payload = list[PayloadPart]
-Handling = t.Generator[PayloadPart, MessagePartType, None]
+Handling = t.AsyncGenerator[PayloadPart, MessagePartType, None]
 
 
-def send_parts(
+async def send_parts(
     *,
-    socket: zmq.Socket,
+    socket: zmq_asyncio.Socket,
     parts: list[tuple[MessagePartType, PayloadPart] | PayloadPart],
 ):
     for i, part in enumerate(parts):
@@ -48,7 +49,7 @@ def send_parts(
                 send_method = socket.send_json
             case _:
                 raise ValueError(f"Invalid 'part_type' parameter value: {part_type}")
-        send_method(part_payload, zmq.SNDMORE if i < len(parts)-1 else 0)
+        await send_method(part_payload, zmq.SNDMORE if i < len(parts)-1 else 0)
 
 
 T_ = t.TypeVar('T_')
@@ -71,20 +72,20 @@ class MessageBearer(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def send(self, socket: zmq.Socket, device: 'Device'):
+    def send(self, socket: zmq_asyncio.Socket, device: 'Device'):
         ...
 
 
 class MessageHandler(abc.ABC):
     @classmethod
-    def handle_from_socket(cls, *, device: 'Device', socket: zmq.Socket):
+    async def handle_from_socket(cls, *, device: 'Device', socket: zmq_asyncio.Socket):
         message = _handle_multipart(socket)
-        next(message)
-        cls.handle(device=device, handling=message)
+        await anext(message)
+        await cls.handle(device=device, handling=message)
 
     @classmethod
     @abc.abstractmethod
-    def handle(
+    async def handle(
         cls,
         *,
         device: 'Device',
@@ -94,9 +95,9 @@ class MessageHandler(abc.ABC):
         ...
 
 
-def _handle_multipart(
-    socket: zmq.Socket,
-) -> t.Generator[
+async def _handle_multipart(
+    socket: zmq_asyncio.Socket,
+) -> t.AsyncGenerator[
     bytes | list | str | int | float | dict,
     MessagePartType,
     None
@@ -105,13 +106,13 @@ def _handle_multipart(
     while True:
         match part_type or MessagePartType.RAW:
             case MessagePartType.RAW:
-                part_type = yield socket.recv()
+                part_type = yield await socket.recv()
             case MessagePartType.PYOBJ:
-                part_type = yield socket.recv_pyobj()
+                part_type = yield await socket.recv_pyobj()
             case MessagePartType.STRING:
-                part_type = yield socket.recv_string()
+                part_type = yield await socket.recv_string()
             case MessagePartType.JSON:
-                part_type = yield socket.recv_json()
+                part_type = yield await socket.recv_json()
             case _:
                 raise ValueError(f"Invalid 'part_type' value: {part_type}")
         if not socket.getsockopt(zmq.RCVMORE):
@@ -119,27 +120,27 @@ def _handle_multipart(
 
 
 class Poller:
-    _sockets: dict[zmq.Socket, t.Type[MessageHandler]] = {}
+    _sockets: dict[zmq_asyncio.Socket, t.Type[MessageHandler]] = {}
 
     def __init__(
         self,
         device: 'Device'
     ):
-        self._poller = zmq.Poller()
+        self._poller = zmq_asyncio.Poller()
         self.device = device
 
     def register(
         self,
-        socket: zmq.Socket,
+        socket: zmq_asyncio.Socket,
         handler: t.Type[MessageHandler]
     ):
         self._poller.register(socket, zmq.POLLIN)
         self._sockets.update({socket: handler})
 
-    def handle(self):
-        result = self._poller.poll()
+    async def handle(self):
+        result = await self._poller.poll()
         if not result:
             return False
 
         for socket, _ in result:
-            self._sockets.get(socket).handle_from_socket(device=self.device, socket=socket)
+            await self._sockets.get(socket).handle_from_socket(device=self.device, socket=socket)

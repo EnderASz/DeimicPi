@@ -20,11 +20,11 @@ class DeimicHandler(base.MessageHandler):
     class ComponentUpdateInfo(base.MessageHandler):
         # Default values for kwargs, cause to: https://youtrack.jetbrains.com/issue/PY-41433
         @classmethod
-        def handle(
+        async def handle(
             cls,
             *,
             device: 'Bridge',
-            handling: t.Generator[
+            handling: t.AsyncGenerator[
                 bytes | list | str | int | float | dict,
                 MessagePartType,
                 None
@@ -44,7 +44,7 @@ class DeimicHandler(base.MessageHandler):
                     f"Invalid payload format: '{payload}' [{type(payload)}]"
                 )
 
-            messages.DeimicStateUpdateInfo.from_payload(
+            await messages.DeimicStateUpdateInfo.from_payload(
                 payload=payload,
                 received_from=identity
             ).send(
@@ -55,21 +55,17 @@ class DeimicHandler(base.MessageHandler):
     class ApplicationForRequests(base.MessageHandler):
         # Default values for kwargs, cause to: https://youtrack.jetbrains.com/issue/PY-41433
         @classmethod
-        def handle(
+        async def handle(
             cls,
             *,
             device: 'Bridge',
-            handling: t.Generator[
-                bytes | list | str | int | float | dict,
-                MessagePartType,
-                None
-            ],
+            handling: base.Handling,
             identity: bytes = None,
             **kwargs
         ):
             print(f"Detected readiness for requests from Deimic[{identity}]")
 
-            base.send_parts(
+            await base.send_parts(
                 socket=device.deimic_stream,
                 parts=[
                     identity,
@@ -97,15 +93,11 @@ class DeimicHandler(base.MessageHandler):
     class Request(base.MessageHandler):
         # Default values for kwargs, cause to: https://youtrack.jetbrains.com/issue/PY-41433
         @classmethod
-        def handle(
+        async def handle(
             cls,
             *,
             device: 'Bridge',
-            handling: t.Generator[
-                bytes | list | str | int | float | dict,
-                MessagePartType,
-                None
-            ],
+            handling: base.Handling,
             identity: bytes = None,
             payload: base.Payload = None,
             **kwargs
@@ -113,43 +105,39 @@ class DeimicHandler(base.MessageHandler):
             print(f"Received request message from Deimic[{identity}]: {payload}")
 
     @classmethod
-    def handle(
+    async def handle(
         cls,
         *,
         device: 'Bridge',
-        handling: t.Generator[
-            bytes | list | str | int | float | dict,
-            base.MessagePartType,
-            None
-        ],
+        handling: base.Handling,
         **kwargs
     ):
-        identity: bytes = next(handling)
-        payload: list[str] = handling.send(base.MessagePartType.STRING).split('-')
+        identity: bytes = await anext(handling)
+        payload: list[str] = (await handling.asend(base.MessagePartType.STRING)).split('-')
         # TODO: Replace `-` delimiter with `|`
         # payload: list[str] = handling.send(base.MessagePartType.STRING).split('|')
 
         message_type = payload.pop(0)
         match message_type:
             case "":
-                print(f"Received empty message from Deimic[{identity}]. Propably it's start/end of connection.")
+                print(f"Received empty message from Deimic[{identity}]. Probably it's start/end of connection.")
                 return
             case cls.DeimicMessageType.OUTPUT | cls.DeimicMessageType.INPUT:
-                cls.ComponentUpdateInfo.handle(
+                await cls.ComponentUpdateInfo.handle(
                     device=device,
                     handling=handling,
                     identity=identity,
                     payload=[message_type, *payload]
                 )
             case cls.DeimicMessageType.READY:
-                cls.ApplicationForRequests.handle(
+                await cls.ApplicationForRequests.handle(
                     device=device,
                     handling=handling,
                     identity=identity,
                     payload=payload
                 )
             case cls.DeimicMessageType.REQUEST:
-                cls.Request.handle(
+                await cls.Request.handle(
                     device=device,
                     handling=handling,
                     identity=identity,
@@ -161,15 +149,11 @@ class DeimicHandler(base.MessageHandler):
 
 class InternalRepliesHandler(base.MessageHandler):
     @classmethod
-    def handle(
+    async def handle(
         cls,
         *,
         device: 'Bridge',
-        handling: t.Generator[
-            bytes | list | str | int | float | dict,
-            base.MessagePartType,
-            None
-        ],
+        handling: base.Handling,
         **kwargs
     ):
         pass
@@ -181,11 +165,7 @@ class ExternalRequestsHandler(base.MessageHandler):
         cls,
         *,
         device: 'Bridge',
-        handling: t.Generator[
-            bytes | list | str | int | float | dict,
-            base.MessagePartType,
-            None
-        ],
+        handling: base.Handling,
         **kwargs
     ):
         pass
