@@ -1,3 +1,4 @@
+import asyncio
 import typing as t
 
 from textual.driver import Driver
@@ -13,6 +14,7 @@ from deimic_pi.devices.cli.app.views import (
 
 class CLIApp(App):
     cli_device: CLITool
+    device_task: asyncio.Task[None]
 
     def __init__(
         self,
@@ -26,6 +28,7 @@ class CLIApp(App):
 
     async def handle_app_connected(self, message: AppConnected):
         self.cli_device = message.cli_device
+        self.device_task = asyncio.create_task(self.cli_device.execute())
         self.view.layout.docks.clear()
         self.view.widgets.clear()
 
