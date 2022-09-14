@@ -1,7 +1,7 @@
 import abc
 import typing as t
 
-import zmq
+import zmq.asyncio as zmq_asyncio
 
 import deimic_pi.messages as base
 from deimic_pi import types
@@ -27,7 +27,7 @@ class DeimicStateUpdateInfo(base.MessageBearer):
 
     @classmethod
     @abc.abstractmethod
-    def from_handling(cls, handling: base.Handling) -> 'DeimicStateUpdateInfo':
+    async def from_handling(cls, handling: base.Handling) -> 'DeimicStateUpdateInfo':
         raise NotImplementedError()
 
     @classmethod
@@ -39,13 +39,13 @@ class DeimicStateUpdateInfo(base.MessageBearer):
     ) -> 'DeimicStateUpdateInfo':
         return cls(*payload, received_from=received_from)
 
-    def send(self, socket: zmq.Socket, device: 'Device'):
+    async def send(self, socket: zmq_asyncio.Socket, device: 'Device'):
         print(
             f"Received Deimic[{self.received_from}] component state update:"
             f" '{self.component_type} {self.address}-{self.number}'"
             f" ({self.new_state})"
         )
-        base.send_parts(
+        await base.send_parts(
             socket=socket,
             parts=[
                 (base.MessagePartType.STRING, base.MessageType.STATE_UPDATE),

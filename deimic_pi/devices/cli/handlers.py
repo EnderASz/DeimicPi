@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
 
 class MonitorHandler(base.MessageHandler):
     @classmethod
-    def handle(
+    async def handle(
         cls,
         *,
         device: 'CLITool',

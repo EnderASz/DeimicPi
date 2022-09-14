@@ -7,7 +7,8 @@ from deimic_pi.devices.led_driver.patterns import PatternBearer, get_pattern
 from deimic_pi.messages import (
     MessageHandler,
     Poller,
-    MessagePartType
+    MessagePartType,
+    Handling
 )
 
 
@@ -19,18 +20,15 @@ class RequestTypes(enum.IntEnum):
 
 class RequestHandler(MessageHandler):
     @classmethod
-    def handle(
+    async def handle(
         cls,
         *,
         device: LedDriver,
-        handling: t.Generator[
-            bytes | list | str | int | float | dict,
-            MessagePartType,
-            None
-        ]
+        handling: Handling,
+        **kwargs
     ):
-        _ = next(handling)   # Request targets signature
-        request_type = handling.send(MessagePartType.STRING)
+        _ = await anext(handling)   # Request targets signature
+        request_type = await handling.asend(MessagePartType.STRING)
         match request_type:
             case RequestTypes.OFF:
                 device.executor_run_controller.clear()
@@ -38,10 +36,10 @@ class RequestHandler(MessageHandler):
                 device.executor_run_controller.set()
             case RequestTypes.PATTERN:
                 # TODO: Replace with selecting pattern by name
-                pattern_name = handling.send(MessagePartType.STRING)
+                pattern_name = await handling.asend(MessagePartType.STRING)
                 pattern_cls = get_pattern(pattern_name)
 
-                pattern_kwargs = handling.send(MessagePartType.JSON)
+                pattern_kwargs = await handling.asend(MessagePartType.JSON)
 
                 if device.led_executor is not None:
                     device.executor_stop_controller.set()
