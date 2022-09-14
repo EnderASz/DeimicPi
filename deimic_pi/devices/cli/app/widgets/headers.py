@@ -11,14 +11,11 @@ from textual.widget import Widget
 from textual import events
 from textual.reactive import Reactive, watch
 
+from deimic_pi.devices.cli.app.widgets import mixins
 
-class Header(Widget):
-    title: str = Reactive("")
-    subtitle: str = Reactive("")
 
+class Header(Widget, mixins.BorderMixin, mixins.SubtitleMixin):
     content_style: StyleType = Reactive("")
-    border_style: StyleType = Reactive("")
-    box: Box = Reactive("")
 
     def __init__(
         self,
@@ -29,20 +26,19 @@ class Header(Widget):
         border_style: StyleType = "white on dark_green",
         box: Box = ROUNDED_BOX
     ):
-        super().__init__()
-        self.title = title or self.app.title
-        self.subtitle = subtitle
-        self.content_style = content_style
-        self.border_style = border_style
-        self.box = box
-
-    @property
-    def full_title(self) -> str:
-        return (
-            f"{self.title} - {self.subtitle}"
-            if self.subtitle
-            else self.title
+        Widget.__init__(self)
+        mixins.SubtitleMixin.__init__(
+            self,
+            title or self.app.title,
+            subtitle,
+            full_title_style=content_style
         )
+        mixins.BorderMixin.__init__(
+            self,
+            box,
+            border_style=border_style
+        )
+        self.content_style = content_style
 
     def __rich_repr__(self) -> rich.repr.Result:
         yield self.full_title
@@ -58,9 +54,10 @@ class Header(Widget):
 
     def render(self) -> RenderableType:
         return Panel(
-            VerticalCenter(Align(self.full_title, 'center')),
+            VerticalCenter(Align(self.styled_full_title, 'center')),
             style=self.content_style,
-            border_style=self.border_style
+            border_style=self.border_style,
+            box=self.box
         )
 
 
@@ -97,4 +94,9 @@ class ClockHeader(Header):
             header_table.add_column('title', justify='left', ratio=1)
             header_table.add_column('clock', justify='right', width=8)
             header_table.add_row(self.full_title, self.get_clock())
-        return Panel(VerticalCenter(header_table), style=self.content_style, border_style=self.border_style)
+        return Panel(
+            VerticalCenter(header_table),
+            style=self.content_style,
+            border_style=self.border_style,
+            box=self.box
+        )

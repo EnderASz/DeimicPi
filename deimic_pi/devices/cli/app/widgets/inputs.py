@@ -1,6 +1,7 @@
 from rich import align
-from rich.console import RenderableType
+from rich.console import RenderableType, StyleType
 from rich.panel import Panel
+from rich.box import Box, ROUNDED as ROUNDED_BOX
 from textual import events, log
 from textual.message import Message
 from textual.message_pump import MessagePump
@@ -8,6 +9,7 @@ from textual.reactive import Reactive
 from textual.widget import Widget
 from textual import widgets as base
 
+from deimic_pi.devices.cli.app.widgets import mixins
 from deimic_pi.types import Port
 
 
@@ -20,31 +22,10 @@ class Submittable(MessagePump):
         await self.emit(Submitted(self))
 
 
-class TextInput(Widget, Submittable):
-    _display_title: RenderableType = ""
-
-    _display_content: RenderableType = ""
-
-    border_style: RenderableType = Reactive("")
-
+class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
     _focused: bool = Reactive(False)
 
     _content_boundaries: tuple[int, int] = Reactive((0, 0))
-
-    _title: str = Reactive("")
-
-    @property
-    def title(self):
-        return self._title
-
-    @title.setter
-    def title(self, value: str):
-        self._title = (
-            str(value)
-            if value is not None
-            else ""
-        )
-        log(f"{self} - Title changed to: {value}")
 
     _content: str = Reactive("")
 
@@ -155,17 +136,27 @@ class TextInput(Widget, Submittable):
         hint: str = "",
         title_align: align.AlignMethod = "center",
         content_align: align.AlignMethod = "left",
-        title_style: str = "bold",
-        content_style: str = "",
-        cursor_style: str = "underline",
-        border_style: str = "",
-        hint_style: str = "italic bright_black",
+        title_style: StyleType = "bold",
+        content_style: StyleType = "",
+        cursor_style: StyleType = "underline",
+        border_style: StyleType = "",
+        box: Box = ROUNDED_BOX,
+        hint_style: StyleType = "italic bright_black",
         max_width: int | None = None,
         # lines: int = 1,
         trim_whitespaces: bool = True
     ):
         super().__init__(name)
-        self.title = title if title is not None else name
+        mixins.TitleMixin.__init__(
+            self,
+            title if title is not None else name,
+            title_style=title_style
+        )
+        mixins.BorderMixin.__init__(
+            self,
+            box=box,
+            border_style=border_style
+        )
         self.hint = hint
 
         self.max_width = max_width
@@ -178,11 +169,9 @@ class TextInput(Widget, Submittable):
         self.title_align = title_align
         self.content_align = content_align
 
-        self.title_style = title_style
         self.hint_style = hint_style
         self.content_style = content_style
         self.cursor_style = cursor_style
-        self.border_style = border_style
 
         self.trim_whitespaces = trim_whitespaces
 
@@ -248,15 +237,8 @@ class TextInput(Widget, Submittable):
         )
         log(f"{self} - Content boundaries moved to: {self._content_boundaries}")
 
-    def render_title(self):
-        self._display_title = (
-            f"[{self.title_style}]{self.title}[/{self.title_style}]"
-            if self.title_style and self.title
-            else self.title
-        )
-        log(f"{self} - New display_title rendered: {self._display_title}")
-
-    def render_content(self):
+    @property
+    def display_content(self):
         if self._focused or self.content:
             content = [self.at_cursor or " "]
             if self.cursor_style and self._focused:
@@ -276,7 +258,6 @@ class TextInput(Widget, Submittable):
                     *content,
                     f"[/{self.content_style}]"
                 ]
-            self._display_content = "".join(content)
         else:
             content = [self.hint]
             if self.hint_style:
@@ -285,23 +266,20 @@ class TextInput(Widget, Submittable):
                     *content,
                     f"[/{self.hint_style}]",
                 ]
-            self._display_content = "".join(content)
-        log(f"{self} - New display_content rendered: {self._display_content}")
+        return "".join(content)
 
     def render(self) -> RenderableType:
-        self.render_title()
-        self.render_content()
-
         return Panel(
             align.Align(
-                self._display_content,
+                self.display_content,
                 align=self.content_align,
             ),
-            title=self._display_title,
+            title=self.styled_title,
             title_align=self.title_align,
             width=self.max_width,
             height=self.lines+2,
-            border_style=self.border_style
+            border_style=self.border_style,
+            box=self.box
         )
 
 

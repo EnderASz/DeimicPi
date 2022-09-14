@@ -75,10 +75,6 @@ class ConnectionEstablishView(GridView):
             else:
                 self.request_port_input.title_style = ""
 
-            self.address_input.render_title()
-            self.monitor_port_input.render_title()
-            self.request_port_input.render_title()
-
             if not valid:
                 return
             connection = CLITool(Settings(
