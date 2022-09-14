@@ -3,7 +3,7 @@ from textual.views import GridView
 from textual.widgets import Placeholder
 
 from deimic_pi.devices.cli import CLITool
-from deimic_pi.devices.cli.app.widgets import TextInput, ClockHeader
+from deimic_pi.devices.cli.app.widgets import TextInput, ClockHeader, Submitted
 
 
 class BridgeConsoleView(GridView):
