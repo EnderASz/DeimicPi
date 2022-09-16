@@ -22,25 +22,19 @@ class Submittable(MessagePump):
         await self.emit(Submitted(self))
 
 
-class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
-    _focused: bool = Reactive(False)
-
+class TextInput(
+    Widget,
+    Submittable,
+    mixins.TitleMixin,
+    mixins.BorderMixin,
+    mixins.TextContentCursorMixin,
+    mixins.TextHintMixin
+):
     _content_boundaries: tuple[int, int] = Reactive((0, 0))
 
-    _content: str = Reactive("")
-
-    @property
-    def content(self) -> str:
-        return self._content
-
-    @content.setter
+    @mixins.TextContentCursorMixin.content.setter
     def content(self, value: str | None):
-        self._content = (
-            str(value)
-            if value is not None
-            else ""
-        )
-        log(f"{self} - Content changed to: {value}")
+        mixins.TextContentMixin.content.fset(self, value)
 
         if self._content_boundaries[0] > 0:
             if len(self.content) < self._content_boundaries[1]:
@@ -48,22 +42,9 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
                 return
         log(f"{self} - Content boundaries changed to: {self._content_boundaries}")
 
-    # Cursor position is at `cursor` character in `content`
-    _cursor: int = Reactive(0)
-
-    @property
-    def cursor(self) -> int:
-        return self._cursor
-
-    @cursor.setter
+    @mixins.TextContentCursorMixin.cursor.setter
     def cursor(self, value: int):
-        value = int(value)
-        if value < 0:
-            raise ValueError("Cursor position cannot be negative value.")
-        if value > len(self.content):
-            raise ValueError("Cursor position cannot exceed the text length.")
-        self._cursor = value
-        log(f"{self} - Cursor moved to: {value}")
+        mixins.TextContentCursorMixin.cursor.fset(self, value)
 
         if self._content_boundaries[0] > self.cursor:
             self._move_boundaries(self.cursor - self._content_boundaries[0])
@@ -73,49 +54,12 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
             self._move_boundaries(1)
 
     @property
-    def before_cursor(self) -> str:
-        return self.content[:self.cursor]
-
-    @property
     def before_cursor_in_boundaries(self) -> str:
         return self.content[self._content_boundaries[0]:self.cursor]
 
     @property
-    def to_cursor(self) -> str:
-        return self.content[:self.cursor+1]
-
-    @property
-    def at_cursor(self) -> str:
-        if self.cursor == len(self.content):
-            return ""
-        return self.content[self.cursor]
-
-    @property
-    def from_cursor(self) -> str:
-        return self.content[self.cursor:]
-
-    @property
-    def after_cursor(self) -> str:
-        return self.content[self.cursor+1:]
-
-    @property
     def after_cursor_in_boundaries(self) -> str:
         return self.content[self.cursor+1:self._content_boundaries[1]]
-
-    _hint: str = Reactive("")
-
-    @property
-    def hint(self) -> str:
-        return self._hint
-
-    @hint.setter
-    def hint(self, value: str):
-        self._hint = (
-            str(value)
-            if value is not None
-            else ""
-        )
-        log(f"{self} - Hint changed to: {value}")
 
     @property
     def value(self) -> str:
@@ -146,7 +90,7 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
         # lines: int = 1,
         trim_whitespaces: bool = True
     ):
-        super().__init__(name)
+        Widget.__init__(self, name)
         mixins.TitleMixin.__init__(
             self,
             title if title is not None else name,
@@ -157,21 +101,25 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
             box=box,
             border_style=border_style
         )
-        self.hint = hint
+        mixins.TextContentCursorMixin.__init__(
+            self,
+            content,
+            cursor,
+            content_style=content_style,
+            cursor_style=cursor_style
+        )
+        mixins.TextHintMixin.__init__(
+            self,
+            hint,
+            hint_style=hint_style
+        )
 
         self.max_width = max_width
         # self.lines = lines
         self.lines = 1
 
-        self.content = content
-        self.cursor = cursor or 0
-
         self.title_align = title_align
         self.content_align = content_align
-
-        self.hint_style = hint_style
-        self.content_style = content_style
-        self.cursor_style = cursor_style
 
         self.trim_whitespaces = trim_whitespaces
 
@@ -203,32 +151,10 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
                     await self.submit()
 
     def on_focus(self, event: events.Focus):
-        self._focused = True
+        self.show_cursor()
 
     def on_blur(self, event: events.Blur):
-        self._focused = False
-
-    def write(self, value):
-        self.content = (
-            self.before_cursor + value + self.from_cursor
-            if self.content is not None
-            else value
-        )
-        self.move_cursor(1)
-
-    def backspace(self):
-        self.content = self.before_cursor[:-1] + self.from_cursor
-        self.move_cursor(-1)
-
-    def delete(self):
-        self.content = self.before_cursor + self.after_cursor
-
-    def clear(self):
-        self.content = ""
-        self.cursor = 0
-
-    def move_cursor(self, move: int):
-        self.cursor += move
+        self.hide_cursor()
 
     def _move_boundaries(self, move: int):
         self._content_boundaries = (
@@ -238,10 +164,10 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
         log(f"{self} - Content boundaries moved to: {self._content_boundaries}")
 
     @property
-    def display_content(self):
-        if self._focused or self.content:
+    def styled_content(self) -> str:
+        if self.cursor_visibility or self.content:
             content = [self.at_cursor or " "]
-            if self.cursor_style and self._focused:
+            if self.cursor_visibility and self.cursor_style:
                 content = [
                     f"[{self.cursor_style}]",
                     *content,
@@ -258,20 +184,13 @@ class TextInput(Widget, Submittable, mixins.TitleMixin, mixins.BorderMixin):
                     *content,
                     f"[/{self.content_style}]"
                 ]
-        else:
-            content = [self.hint]
-            if self.hint_style:
-                content = [
-                    f"[{self.hint_style}]",
-                    *content,
-                    f"[/{self.hint_style}]",
-                ]
-        return "".join(content)
+            return "".join(content)
+        return self.styled_hint
 
     def render(self) -> RenderableType:
         return Panel(
             align.Align(
-                self.display_content,
+                self.styled_content,
                 align=self.content_align,
             ),
             title=self.styled_title,
