@@ -73,21 +73,31 @@ _T_Settings = t.Union[
 
 class Device(abc.ABC):
     """
-    Device abstract class representing constant "module" of deimic_pi project
+    Device abstract class representing "module" of DeimicPi project
     like bridge, led driver, voice recognition etc.
-    Dynamic modules like external applications or CLI tools are not Devices!
 
     Each inheriting class must define its own `DEVICE_TYPE` and `POLLER_CLS`
     attributes
-
     """
     DEVICE_TYPE: DeviceType
     POLLER_CLS: t.Type[Poller]
 
+    _sockets: list[zmq_asyncio.Socket] = []
+
     def __init__(self, settings: _T_Settings):
         self.settings = settings
 
-        self.ctx = zmq_asyncio.Context()
+        self._ctx = zmq_asyncio.Context()
+
+    def create_socket(self, socket_type: int, **kwargs) -> zmq_asyncio.Socket:
+        socket = self._ctx.socket(socket_type, **kwargs)
+        self._sockets.append(socket)
+        return socket
+
+    def __del__(self):
+        for socket in self._sockets:
+            socket.close()
+        self._ctx.term()
 
     async def execute(self):
         poller = self.POLLER_CLS(device=self)

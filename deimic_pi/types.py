@@ -24,5 +24,8 @@ class Port(int, click.ParamType):
     @classmethod
     def convert(cls, value, *args, **kwargs):
         if 1 <= (value := int(value)) <= cls.MAX_NUMBER:
-            return int(value)
-        return ValueError(f"Given value is out of range ({cls.MIN_NUMBER} - {cls.MAX_NUMBER})")
+            return value
+        raise ValueError(f"Given value is out of ports range ({cls.MIN_NUMBER} - {cls.MAX_NUMBER})")
+
+    def __new__(cls, value):
+        return cls.convert(value)
