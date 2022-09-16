@@ -33,7 +33,7 @@ def execute(inter_broadcaster_port, inter_listener_port):
         inter_listener_port=inter_listener_port
     )
     bridge = Bridge(settings)
-    bridge.execute()
+    asyncio.run(bridge.execute())
 
 
 if __name__ == '__main__':
